@@ -1,0 +1,34 @@
+Фрагмент кода
+# MPLAB X IDE - Temporary and User-specific files
+# Локальные настройки и временные файлы IDE
+**/nbproject/private/
+**/nbproject/Makefile-*
+**/nbproject/Package-*
+
+# Build artifacts (Object files, hex, list files, etc.)
+# Результаты сборки (Объектные файлы, прошивки)
+**/build/
+**/dist/
+
+# XC8 Compiler specific logs and temp files
+# Логи и временные файлы компилятора XC8
+debug/
+release/
+*.o
+*.p1
+*.d
+*.pre
+*.sym
+*.cmf
+*.cof
+*.elf
+*.hxl
+*.lst
+*.map
+*.rlf
+*.sdb
+
+# OS generated files
+# Системные файлы ОС
+.DS_Store
+Thumbs.db

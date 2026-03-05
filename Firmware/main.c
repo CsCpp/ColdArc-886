@@ -1,253 +1,76 @@
-#include <xc.h>
-#include <stdint.h>
+/**
+ * Project / œÓÂÍÚ: ColdArc-886
+ * File / ‘‡ÈÎ: main.c
+ * MCU / Ã : PIC16F886
+ */
 
-// --- CONFIGURATION / –ö–û–ù–§–ò–ì–£–†–ê–¶–ò–Ø ---
-#pragma config FOSC = INTRC_NOCLKOUT, WDTE = ON, PWRTE = ON, MCLRE = ON
-#pragma config CP = OFF, CPD = OFF, BOREN = ON, IESO = OFF, FCMEN = OFF, LVP = OFF
+#include "config.h"
+#include "hardware.h"
+#include "settings.h"
+#include "welding_fsm.h"
 
-#define _XTAL_FREQ 8000000 
+// --- GLOBAL VARIABLES / √ÀŒ¡¿À‹Õ€≈ œ≈–≈Ã≈ÕÕ€≈ ---
+volatile uint16_t sys_ms = 0;       // System uptime in ms / ¬ÂÏˇ ‡·ÓÚ˚ ÒËÒÚÂÏ˚ ‚ ÏÒ
+volatile uint16_t state_timer = 0;  // Timer for welding phases / “‡ÈÏÂ Ù‡Á Ò‚‡ÍË
 
-// --- PIN DEFINITIONS / –ü–ò–ù–´ ---
-#define GAS_RELAY    PORTBbits.RB1 
-#define WELD_ALLOW   PORTBbits.RB2 // 0 = Current ON / 0 = –¢–æ–∫ –í–ö–õ
-#define ARC_IGNITE   PORTCbits.RC0 // 1 = HF ON / 1 = –ü–æ–¥–∂–∏–≥ –í–ö–õ
-#define LED_BAR      PORTA      
-
-#define BTN_START    PORTBbits.RB3 
-#define BTN_UP       PORTBbits.RB4 
-#define BTN_DOWN     PORTBbits.RB5 
-
-// --- SAFETY PARAMETERS / –ü–ê–†–ê–ú–ï–¢–†–´ –ë–ï–ó–û–ü–ê–°–ù–û–°–¢–ò ---
-#define WELD_MAX_TIME_SEC 120 // Max arc duration to prevent overheating / –ú–∞–∫—Å. –≤—Ä–µ–º—è –¥—É–≥–∏
-
-// --- STATE MACHINE STATES / –°–û–°–¢–û–Ø–ù–ò–Ø –ê–í–¢–û–ú–ê–¢–ê ---
-typedef enum {
-    SM_IDLE,            // Waiting for start / –û–∂–∏–¥–∞–Ω–∏–µ –Ω–∞–∂–∞—Ç–∏—è
-    SM_PRE_GAS,         // Gas pre-flow / –ü—Ä–µ–¥-–≥–∞–∑
-    SM_ARC_INIT,        // High frequency ignition / –ü–æ–¥–∂–∏–≥ –¥—É–≥–∏ (–í–ß)
-    SM_WELD_2T,         // Standard 2T welding / –°–≤–∞—Ä–∫–∞ 2–¢
-    SM_4T_WAIT_RELEASE, // 4T: Wait for release after start / 4–¢: –û–∂–∏–¥–∞–Ω–∏–µ –ø–æ—Å–ª–µ –ø–æ–¥–∂–∏–≥–∞
-    SM_4T_WELDING,      // 4T: Main welding process / 4–¢: –û—Å–Ω–æ–≤–Ω–æ–π –ø—Ä–æ—Ü–µ—Å—Å
-    SM_4T_WAIT_STOP,    // 4T: Wait for final release / 4–¢: –§–∏–Ω–∞–ª—å–Ω–æ–µ –æ—Ç–ø—É—Å–∫–∞–Ω–∏–µ
-    SM_COLD_PULSE,      // Cold Weld: Current pulse / Cold Weld: –ò–º–ø—É–ª—å—Å
-    SM_COLD_PAUSE,      // Cold Weld: Pause / Cold Weld: –ü–∞—É–∑–∞
-    SM_TACK_PROCESS,    // Tack welding mode / –†–µ–∂–∏–º –ø—Ä–∏—Ö–≤–∞—Ç–∫–∏
-    SM_POST_GAS,        // Gas post-flow / –ü–æ—Å—Ç-–≥–∞–∑
-    SM_EMERGENCY_STOP   // Safety timeout triggered / –ê–≤–∞—Ä–∏–π–Ω–∞—è –æ—Å—Ç–∞–Ω–æ–≤–∫–∞
-} weld_state_t;
-
-// --- GLOBAL VARIABLES / –ì–õ–û–ë–ê–õ–¨–ù–´–ï –ü–ï–†–ï–ú–ï–ù–ù–´–ï ---
-volatile uint16_t state_timer = 0;    // Countdown for states (ms) / –°—á–µ—Ç—á–∏–∫ –¥–ª—è —Å–æ—Å—Ç–æ—è–Ω–∏–π (–º—Å)
-volatile uint16_t ms_counter = 0;     // System tick / –°–∏—Å—Ç–µ–º–Ω—ã–π —Å—á–µ—Ç—á–∏–∫
-volatile uint16_t safety_timer_ms = 0;
-volatile uint16_t safety_timer_sec = 0;
-
-weld_state_t current_state = SM_IDLE;
-uint8_t mode = 0;      
-uint8_t gas_time = 5;      
-uint8_t arc_init_val = 10; 
-uint8_t pulse_time = 10;   
-uint8_t tack_time = 5;     
-
-// --- PROTOTYPES / –ü–†–û–¢–û–¢–ò–ü–´ ---
-void system_init(void);
-void process_welding_fsm(void);
-void handle_ui(void);
-void load_settings(void);
-void save_settings(void);
-
-// --- INTERRUPT SERVICE ROUTINE / –ü–†–ï–†–´–í–ê–ù–ò–ï ---
+// --- INTERRUPT SERVICE ROUTINE / Œ¡–¿¡Œ“◊»  œ–≈–€¬¿Õ»… ---
 void __interrupt() isr(void) {
-    if (T0IF) {
-        TMR0 = 6; // 1ms tick at 8MHz / –¢–∏–∫ 1–º—Å –ø—Ä–∏ 8–ú–ì—Ü
-        if (state_timer > 0) state_timer--;
-        ms_counter++;
+    // Timer0 interrupt every 1ms (Internal OSC 8MHz, Prescaler 1:8)
+    // œÂ˚‚‡ÌËÂ Timer0 Í‡Ê‰˚Â 1ÏÒ (¬ÌÛÚ. OSC 8Ã√ˆ, ƒÂÎËÚÂÎ¸ 1:8)
+    if (T0IF) {                         
+        TMR0 = 6;                       // Offset for exact 1ms / —ÏÂ˘ÂÌËÂ ‰Îˇ ÚÓ˜ÌÓÒÚË 1ÏÒ
         
-        // Safety timer: increments only when welding / –¢–∞–π–º–µ—Ä –±–µ–∑–æ–ø–∞—Å–Ω–æ—Å—Ç–∏ (—Å—á–∏—Ç–∞–µ—Ç –ø—Ä–∏ —Å–≤–∞—Ä–∫–µ)
-        if (current_state == SM_WELD_2T || current_state == SM_4T_WELDING || current_state == SM_COLD_PULSE) {
-            if (++safety_timer_ms >= 1000) {
-                safety_timer_ms = 0;
-                safety_timer_sec++;
-            }
-        } else {
-            safety_timer_ms = 0;
-            safety_timer_sec = 0;
+        if (state_timer > 0) {
+            state_timer--;              // Decrement welding timer / ŒÚÒ˜ÂÚ Ú‡ÈÏÂ‡ Ò‚‡ÍË
         }
-        T0IF = 0;
+        
+        sys_ms++;                       // Increment global ticks / »ÌÍÂÏÂÌÚ ÒËÒÚÂÏÌ˚ı ÚËÍÓ‚
+        T0IF = 0;                       // Clear flag / —·ÓÒ ÙÎ‡„‡
     }
 }
 
+// --- MAIN LOOP / √À¿¬Õ€… ÷» À ---
 void main(void) {
-    system_init();
-    load_settings();
+    // 1. Hardware abstraction layer initialization
+    // 1. »ÌËˆË‡ÎËÁ‡ˆËˇ ‰‡È‚ÂÓ‚ Ó·ÓÛ‰Ó‚‡ÌËˇ
+    HW_Init(); 
+    
+    // 2. Load settings from non-volatile memory (EEPROM)
+    // 2. «‡„ÛÁÍ‡ Ì‡ÒÚÓÂÍ ËÁ ˝ÌÂ„ÓÌÂÁ‡‚ËÒËÏÓÈ Ô‡ÏˇÚË (EEPROM)
+    Settings_Load();
 
-    // Stuck button protection on startup / –ó–∞—â–∏—Ç–∞ –æ—Ç –∑–∞–ª–∏–ø–∞–Ω–∏—è –∫–Ω–æ–ø–æ–∫ –ø—Ä–∏ –≤–∫–ª—é—á–µ–Ω–∏–∏
+    // 3. Safety Check: Ensure no buttons are stuck on power-up
+    // 3. œÓ‚ÂÍ‡ ·ÂÁÓÔ‡ÒÌÓÒÚË: ÍÌÓÔÍË ÌÂ ‰ÓÎÊÌ˚ ·˚Ú¸ Á‡Ê‡Ú˚ ÔË ‚ÍÎ˛˜ÂÌËË
     while (!BTN_START || !BTN_UP || !BTN_DOWN) {
-        CLRWDT();
-        if ((ms_counter / 100) % 2) LED_BAR = 0b10000001; // Blink edges / –ú–∏–≥–∞—Ç—å –∫—Ä–∞—è–º–∏
-        else LED_BAR = 0x00;
+        CLRWDT();                       // Reset Watchdog / —·ÓÒ ÒÚÓÓÊÂ‚Ó„Ó Ú‡ÈÏÂ‡
+        HW_BlinkAlert(sys_ms);          // Blink LEDs to show error / ÃË„‡ÌËÂ LED ÔË Ó¯Ë·ÍÂ
     }
+    
+    // Reset display to normal after check
+    // ¬ÓÁ‚‡Ú ËÌ‰ËÍ‡ˆËË ‚ ÌÓÏÛ ÔÓÒÎÂ ÔÓ‚ÂÍË
+    HW_UpdateDisplay(cfg.mode); 
 
     while(1) {
-        CLRWDT(); 
-        process_welding_fsm(); // Handle welding logic / –õ–æ–≥–∏–∫–∞ —Å–≤–∞—Ä–∫–∏
-        handle_ui();           // Handle buttons and LEDs / –ö–Ω–æ–ø–∫–∏ –∏ –∏–Ω–¥–∏–∫–∞—Ü–∏—è
+        CLRWDT();                       // Clear Watchdog Timer / —·ÓÒ Watchdog
+
+        // A) Welding State Machine Execution
+        // ¿) ¬˚ÔÓÎÌÂÌËÂ Ò‚‡Ó˜ÌÓ„Ó ‡‚ÚÓÏ‡Ú‡ (ÒÓÒÚÓˇÌËˇ ÔÓˆÂÒÒ‡)
+        FSM_Process();
+
+        // B) User Interface Processing (every 10ms for debounce)
+        // ¡) Œ·‡·ÓÚÍ‡ ËÌÚÂÙÂÈÒ‡ (Í‡Ê‰˚Â 10ÏÒ ‰Îˇ ÔÓ‰‡‚ÎÂÌËˇ ‰Â·ÂÁ„‡)
+        if (sys_ms % 10 == 0) {
+            UI_HandleButtons(sys_ms);
+        }
+
+        // C) LED Display Update logic
+        // ¬) ÀÓ„ËÍ‡ Ó·ÌÓ‚ÎÂÌËˇ Ò‚ÂÚÓ‰ËÓ‰ÌÓÈ ¯Í‡Î˚
+        if (edit_state == EDIT_OFF) {
+            // Show current mode if not in Menu
+            // œÓÍ‡Á˚‚‡ÂÏ ÂÊËÏ, ÂÒÎË Ï˚ ÌÂ ‚ ÏÂÌ˛ Ì‡ÒÚÓÂÍ
+            HW_UpdateDisplay(cfg.mode);
+        }
+        // If in Menu, LED_BAR is controlled inside UI_HandleButtons
+        // ≈ÒÎË ‚ ÏÂÌ˛, LED_BAR ÛÔ‡‚ÎˇÂÚÒˇ ‚ÌÛÚË UI_HandleButtons
     }
-}
-
-void system_init(void) {
-    OSCCON = 0x71; // 8MHz Internal clock / 8–ú–ì—Ü –≤–Ω—É—Ç—Ä. –æ—Å—Ü–∏–ª–ª—è—Ç–æ—Ä
-    ANSEL = 0; ANSELH = 0; // Digital I/O / –í—Å–µ –ø–∏–Ω—ã —Ü–∏—Ñ—Ä–æ–≤—ã–µ
-    TRISA = 0x00; LED_BAR = 0xFF; 
-    TRISB = 0x38; // RB3,4,5 inputs / –í—Ö–æ–¥—ã
-    TRISCbits.TRISC0 = 0; // RC0 output (HF) / –í—ã—Ö–æ–¥ –ø–æ–¥–∂–∏–≥–∞
-    
-    OPTION_REG = 0x02; // Prescaler TMR0 1:8 / –î–µ–ª–∏—Ç–µ–ª—å 1:8
-    TMR0 = 6;
-    T0IE = 1; GIE = 1; // Enable interrupts / –í–∫–ª—é—á–∏—Ç—å –ø—Ä–µ—Ä—ã–≤–∞–Ω–∏—è
-
-    GAS_RELAY = 0; WELD_ALLOW = 1; ARC_IGNITE = 0; // Default states / –ò—Å—Ö. —Å–æ—Å—Ç–æ—è–Ω–∏—è
-}
-
-// --- WELDING STATE MACHINE / –ö–û–ù–ï–ß–ù–´–ô –ê–í–¢–û–ú–ê–¢ ---
-
-void process_welding_fsm(void) {
-    // Check safety timeout / –ü—Ä–æ–≤–µ—Ä–∫–∞ –∞–≤–∞—Ä–∏–π–Ω–æ–≥–æ —Ç–∞–π–º–∞—É—Ç–∞
-    if (safety_timer_sec >= WELD_MAX_TIME_SEC && current_state != SM_EMERGENCY_STOP) {
-        current_state = SM_EMERGENCY_STOP;
-    }
-
-    switch(current_state) {
-        case SM_IDLE:
-            WELD_ALLOW = 1; ARC_IGNITE = 0; GAS_RELAY = 0;
-            if (!BTN_START) {
-                state_timer = (uint16_t)gas_time * 100;
-                GAS_RELAY = 1;
-                current_state = SM_PRE_GAS;
-            }
-            break;
-
-        case SM_PRE_GAS: // Gas flow before arc / –ü—Ä–æ–¥—É–≤–∫–∞ –¥–æ —Å–≤–∞—Ä–∫–∏
-            if (state_timer == 0) {
-                WELD_ALLOW = 0; // Relay ON (active low) / –¢–æ–∫ –í–ö–õ
-                ARC_IGNITE = 1; // HF ON / –ü–æ–¥–∂–∏–≥ –í–ö–õ
-                state_timer = (uint16_t)arc_init_val * 100;
-                current_state = SM_ARC_INIT;
-            }
-            break;
-
-        case SM_ARC_INIT: // High frequency burst / –†–∞–±–æ—Ç–∞ –æ—Å—Ü–∏–ª–ª—è—Ç–æ—Ä–∞
-            if (state_timer == 0) {
-                ARC_IGNITE = 0;
-                if (mode == 0) current_state = SM_WELD_2T;
-                else if (mode == 1) current_state = SM_4T_WAIT_RELEASE;
-                else if (mode == 2) current_state = SM_COLD_PULSE;
-                else {
-                    state_timer = (uint16_t)tack_time * 10;
-                    current_state = SM_TACK_PROCESS;
-                }
-            }
-            break;
-
-        case SM_WELD_2T: // Standard 2T: hold button to weld / 2–¢: –¥–µ—Ä–∂–∏–º –∫–Ω–æ–ø–∫—É
-            if (BTN_START) { 
-                WELD_ALLOW = 1;
-                state_timer = (uint16_t)gas_time * 100;
-                current_state = SM_POST_GAS;
-            }
-            break;
-
-        case SM_4T_WAIT_RELEASE: // 4T step 2 / 4–¢ —à–∞–≥ 2
-            if (BTN_START) current_state = SM_4T_WELDING;
-            break;
-
-        case SM_4T_WELDING: // 4T step 3 (main arc) / 4–¢ —à–∞–≥ 3 (–æ—Å–Ω–æ–≤–Ω–∞—è –¥—É–≥–∞)
-            if (!BTN_START) current_state = SM_4T_WAIT_STOP;
-            break;
-
-        case SM_4T_WAIT_STOP: // 4T step 4 (release to end) / 4–¢ —à–∞–≥ 4 (—Ñ–∏–Ω–∞–ª)
-            if (BTN_START) {
-                WELD_ALLOW = 1;
-                state_timer = (uint16_t)gas_time * 100;
-                current_state = SM_POST_GAS;
-            }
-            break;
-
-        case SM_COLD_PULSE: // Short powerful pulse / –ö–æ—Ä–æ—Ç–∫–∏–π –∏–º–ø—É–ª—å—Å
-            ARC_IGNITE = 1; // HF with every pulse / –ü–æ–¥–∂–∏–≥ –Ω–∞ –∫–∞–∂–¥—ã–π –∏–º–ø—É–ª—å—Å
-            state_timer = 40; // 40ms pulse / 40–º—Å –∏–º–ø—É–ª—å—Å
-            current_state = SM_COLD_PAUSE;
-            break;
-
-        case SM_COLD_PAUSE: // Pause between pulses / –ü–∞—É–∑–∞
-            if (state_timer == 0) {
-                ARC_IGNITE = 0;
-                if (BTN_START) { // Button released / –ö–Ω–æ–ø–∫—É –æ—Ç–ø—É—Å—Ç–∏–ª–∏
-                    WELD_ALLOW = 1;
-                    state_timer = (uint16_t)gas_time * 100;
-                    current_state = SM_POST_GAS;
-                } else {
-                    state_timer = (uint16_t)pulse_time * 10;
-                    current_state = SM_ARC_INIT; // Next cycle / –ù–∞ –Ω–æ–≤—ã–π –∫—Ä—É–≥
-                }
-            }
-            break;
-
-        case SM_TACK_PROCESS: // Single spot weld / –û–¥–∏–Ω–æ—á–Ω–∞—è –ø—Ä–∏—Ö–≤–∞—Ç–∫–∞
-            if (state_timer == 0) {
-                WELD_ALLOW = 1;
-                if (BTN_START) {
-                    state_timer = (uint16_t)gas_time * 100;
-                    current_state = SM_POST_GAS;
-                }
-            }
-            break;
-
-        case SM_EMERGENCY_STOP: // Timeout alert / –ê–≤–∞—Ä–∏—è –ø–æ –≤—Ä–µ–º–µ–Ω–∏
-            WELD_ALLOW = 1; ARC_IGNITE = 0;
-            if ((ms_counter / 200) % 2) LED_BAR = 0x00; // Blink bar / –ú–∏–≥–∞—Ç—å —à–∫–∞–ª–æ–π
-            else LED_BAR = 0xFF;
-            
-            if (BTN_START) { // Reset on release / –°–±—Ä–æ—Å –ø—Ä–∏ –æ—Ç–ø—É—Å–∫–∞–Ω–∏–∏
-                state_timer = (uint16_t)gas_time * 100;
-                current_state = SM_POST_GAS;
-            }
-            break;
-
-        case SM_POST_GAS: // Gas flow after weld / –û—Ö–ª–∞–∂–¥–µ–Ω–∏–µ –ø–æ—Å–ª–µ —Å–≤–∞—Ä–∫–∏
-            if (state_timer == 0) {
-                GAS_RELAY = 0;
-                current_state = SM_IDLE;
-            }
-            break;
-    }
-}
-
-// --- USER INTERFACE / –ò–ù–¢–ï–†–§–ï–ô–° ---
-void handle_ui(void) {
-    static uint16_t ui_timer = 0;
-    if (current_state != SM_IDLE) return;
-
-    LED_BAR = ~(1 << (mode & 0x07)); // Show mode / –ü–æ–∫–∞–∑–∞—Ç—å —Ä–µ–∂–∏–º
-
-    if (!BTN_UP && (ms_counter - ui_timer > 250)) { // Mode switch / –°–º–µ–Ω–∞ —Ä–µ–∂–∏–º–∞
-        mode = (mode + 1) % 4;
-        save_settings();
-        ui_timer = ms_counter;
-    }
-
-    if (!BTN_DOWN) GAS_RELAY = 1; // Manual gas test / –¢–µ—Å—Ç –≥–∞–∑–∞
-    else if (current_state == SM_IDLE) GAS_RELAY = 0;
-}
-
-// --- NON-VOLATILE MEMORY / –ü–ê–ú–Ø–¢–¨ ---
-void save_settings(void) {
-    if(eeprom_read(0x00) != mode) eeprom_write(0x00, mode);
-    // Add other variables as needed / –î–æ–±–∞–≤—å—Ç–µ –¥—Ä—É–≥–∏–µ –ø–µ—Ä–µ–º–µ–Ω–Ω—ã–µ...
-}
-
-void load_settings(void) {
-    mode = eeprom_read(0x00);
-    if(mode > 3) mode = 0; // Bound check / –ü—Ä–æ–≤–µ—Ä–∫–∞ –≥—Ä–∞–Ω–∏—Ü
-    // Load others...
 }

@@ -1,64 +1,47 @@
-⚡ ColdArc 886 — Professional TIG/Cold Weld Controller (v2.0)
-ColdArc 886 — это цифровой контроллер для сварочных инверторов на базе PIC16F886. В версии 2.0 программная часть полностью переписана на архитектуру конечного автомата (FSM), что обеспечивает прецизионную точность таймингов и промышленную надежность.
-🇷🇺 Описание (RU)
-🌟 Основные изменения в v2.0
-Архитектура FSM: Процесс сварки разделен на 12 независимых состояний. Никаких блокирующих задержек (delay_ms), полный контроль системы в реальном времени.
-Системный Тик (1мс): Все временные интервалы управляются аппаратным таймером TMR0.
-Безопасность (Safety Timeout): Автоматическое прерывание дуги через 120 секунд (защита от залипания кнопки/перегрева).
-Защита при старте: Блокировка работы, если кнопка горелки нажата в момент включения питания.
-Улучшенный Cold Weld: Идеально стабильные импульсы для сварки тонких металлов «чешуйкой».
-🛠 Технические характеристики
-МК: PIC16F886 (8 МГц Internal RC).
-Режимы: 2Т (Ручной), 4Т (Полуавтомат), Cold Weld (Импульсный), Tack (Прихватка).
-Изоляция: Требуется гальваническая развязка всех выходов (рекомендуются оптопары PC817).
-🇺🇸 Description (EN)
-🌟 Key Updates in v2.0
-FSM Architecture: The welding process is now managed by a 12-state Finite State Machine. Zero blocking delays, enabling real-time system monitoring.
-System Tick (1ms): All timings are driven by the hardware TMR0 interrupt for microsecond precision.
-Safety Timeout: Hardware-level arc cutoff after 120 seconds to prevent torch overheating or stuck-button accidents.
-Power-On Protection: System stays in safe mode if the torch trigger is depressed during power-up.
-Enhanced Cold Weld: Rock-solid pulse consistency for high-quality "fish-scale" welds on thin sheets.
-🛠 Specifications
-MCU: Microchip PIC16F886 (8 MHz Internal).
-Modes: 2T (Manual), 4T (Latch), Cold Weld (Pulse), Tack (Spot).
-Control: Active-Low logic for buttons and LED bar; Opto-isolated outputs.
-🕹 Pinout / Пиновка (FSM Logic)
-Pin	Name	Function (RU/EN)
-RA0-RA7	LED_BAR	Индикация параметров / LED Bar Graph (Active-Low)
-RB1	GAS_RELAY	Газовый клапан / Gas Valve (1 = ON)
-RB2	WELD_ALLOW	Разрешение тока / Weld Current (0 = ON/Safe-fail)
-RB3	BTN_START	Кнопка горелки / Torch Trigger (Active-Low)
-RB4	BTN_UP	Режим / Вверх / Mode / Up
-RB5	BTN_DOWN	Продувка / Вниз / Gas Purge / Down
-RC0	ARC_IGNITE	Осциллятор (ВЧ) / HF Ignition (1 = ON)
-🚀 Installation / Установка
-Compile using XC8 v2.x+.
-Flash via PICkit 3/4.
-Important: Disable LVP in programmer settings. / Важно: Отключите LVP в настройках программатора.
-⚠️ Disclaimer
-RU: Использование данного устройства со сварочным оборудованием сопряжено с риском. Автор не несет ответственности за повреждение оборудования.
-EN: High voltage/current hazard. Use at your own risk. Always ensure proper galvanic isolation for the control board.
+﻿# ColdArc-886: Профессиональный контроллер для TIG/Cold сварки
 
-📊 Настройка параметров / Parameter Limits
-Каждому режиму соответствует свой настраиваемый параметр, отображаемый на шкале LED_BAR (8 светодиодов).
-Each mode has a dedicated parameter adjustable via the LED_BAR (8-step scale).
-Режим (Mode)	Параметр (Parameter)	Диапазон (Range)	Описание (Description)
-2T	Gas Time	0.1 - 3.1 сек	Время пред-газа и пост-газа / Pre & Post flow.
-4T	Arc Init	0.1 - 3.1 сек	Время работы осциллятора (ВЧ) / HF Start duration.
-Cold Weld	Pulse Time	10 - 310 мс	Пауза между импульсами тока / Delay between pulses.
-Tack	Tack Time	10 - 310 мс	Длительность одиночной точки / Single spot time.
-🔌 Схема подключения / Wiring Diagram (Text-based)
-Для защиты PIC16F886 обязательно используйте опторазвязку.
-Mandatory: Use optocouplers (e.g., PC817) for all power-side signals.
-text
-       [ PIC16F886 ]           [ ISOLATION / RELAY ]          [ WELDING MACHINE ]
-      ----------------       -----------------------        ---------------------
-      RB1 (Gas)   --------> [ Opto -> Relay 12V ] --------> Gas Valve (Solenoid)
-      RB2 (Weld)  --------> [ Opto -> Relay/FET ] --------> Inverter Trigger (PWM)
-      RC0 (HF)    --------> [ Opto -> Relay/SCR ] --------> HF Ignition / Oscillator
-      
-      RB3 (Start) <-------- [ Torch Switch ] <------------- GND (Vss)
-      RB4 (Mode)  <-------- [ Button UP ] <---------------- GND (Vss)
-      RB5 (Down)  <-------- [ Button DOWN ] <-------------- GND (Vss)
-      
-      RA0-RA7     --------> [ 220 Ohm Resistors ] --------> [ LED BAR Graph (Cathode)]
+**ColdArc-886** — это прошивка для микроконтроллера PIC16F886, превращающая обычный сварочный инвертор в специализированный аппарат для высокоточной сварки нержавейки и тонких металлов.
+
+## 🛠 Основные возможности
+* **4 режима работы:** 2T (стандарт), 4T (длинные швы), Cold Weld (холодная сварка точками), Tack (прихватка).
+* **Прецизионный Cold Weld:** Фиксированный импульс 40 мс для формирования идеальной "чешуи" без перегрева металла.
+* **Раздельный газовый тракт:** Индивидуальная настройка времени Pre-Gas и Post-Gas.
+* **Скрытое меню настроек:** Управление всеми параметрами всего 3-мя кнопками.
+* **Система безопасности:** Защита от залипания кнопки горелки и авто-отключение дуги через 120 секунд.
+
+## 🕹 Управление (Interface)
+
+Устройство управляется тремя кнопками: **START** (на горелке), **UP** и **DOWN**.
+
+### Основной режим
+* **UP:** Переключение режимов (индикация на LED 1-4).
+* **DOWN (удержание):** Тест газа (продувка).
+* **UP + DOWN (удержание 1 сек):** Вход в меню настроек.
+
+### Меню настроек (Settings Menu)
+В режиме меню активный параметр мигает на светодиодной шкале.
+1. **Короткое нажатие UP+DOWN:** Переход к следующему параметру.
+2. **Кнопки UP / DOWN:** Изменение значения.
+3. **Длинное нажатие UP+DOWN (или кнопка горелки):** Сохранение и выход.
+
+| LED | Параметр | Диапазон | Описание |
+|:---:|:---|:---:|:---|
+| **L1** | Pre-Gas | 0.1 – 0.5 сек | Продувка перед сваркой |
+| **L2** | Post-Gas | 0.5 – 1.0 сек | Защита электрода после сварки |
+| **L3** | HF Start | 0.1 – 3.0 сек | Время работы осциллятора |
+| **L4** | Cold Pause | 0.1 – 0.5 сек | Пауза между точками в режиме Cold |
+
+## 🔌 Схема подключения (Hardware)
+
+Контроллер использует следующие выводы PIC16F886:
+* **PORT A:** Светодиодная шкала (8 LED, активный 0).
+* **RB1:** Реле газового клапана.
+* **RB2:** Управление током инвертора (Active Low).
+* **RC0:** Управление осциллятором (HF).
+* **RB3:** Кнопка горелки (START).
+* **RB4/RB5:** Кнопки навигации UP/DOWN.
+
+## 🚀 Сборка проекта
+1. Откройте проект в **MPLAB X IDE**.
+2. Используйте компилятор **XC8**.
+3. Прошейте контроллер через **PICkit 3/4**.

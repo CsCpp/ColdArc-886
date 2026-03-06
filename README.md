@@ -1,47 +1,84 @@
-﻿# ColdArc-886: Профессиональный контроллер для TIG/Cold сварки
+﻿# 🛠 TIG Welding Controller (PIC16F886)
 
-**ColdArc-886** — это прошивка для микроконтроллера PIC16F886, превращающая обычный сварочный инвертор в специализированный аппарат для высокоточной сварки нержавейки и тонких металлов.
+## 📖 Project Overview / Обзор проекта
 
-## 🛠 Основные возможности
-* **4 режима работы:** 2T (стандарт), 4T (длинные швы), Cold Weld (холодная сварка точками), Tack (прихватка).
-* **Прецизионный Cold Weld:** Фиксированный импульс 40 мс для формирования идеальной "чешуи" без перегрева металла.
-* **Раздельный газовый тракт:** Индивидуальная настройка времени Pre-Gas и Post-Gas.
-* **Скрытое меню настроек:** Управление всеми параметрами всего 3-мя кнопками.
-* **Система безопасности:** Защита от залипания кнопки горелки и авто-отключение дуги через 120 секунд.
+### English
+This project provides a robust firmware solution for DIY TIG welding machines based on the PIC16F886 microcontroller. It transforms a basic board into a professional-grade controller capable of managing gas flow, high-frequency (HF) arc ignition, and complex welding sequences.
 
-## 🕹 Управление (Interface)
+### Русский
+Этот проект представляет собой надежную прошивку для самодельных сварочных аппаратов TIG на базе микроконтроллера PIC16F886. Прошивка превращает плату в контроллер, способный управлять подачей газа, осциллятором поджига (HF) и сложными циклами сварки.
 
-Устройство управляется тремя кнопками: **START** (на горелке), **UP** и **DOWN**.
+---
 
-### Основной режим
-* **UP:** Переключение режимов (индикация на LED 1-4).
-* **DOWN (удержание):** Тест газа (продувка).
-* **UP + DOWN (удержание 1 сек):** Вход в меню настроек.
+## ⚡ Key Features / Основной функционал
 
-### Меню настроек (Settings Menu)
-В режиме меню активный параметр мигает на светодиодной шкале.
-1. **Короткое нажатие UP+DOWN:** Переход к следующему параметру.
-2. **Кнопки UP / DOWN:** Изменение значения.
-3. **Длинное нажатие UP+DOWN (или кнопка горелки):** Сохранение и выход.
+### English
+* **4 Operating Modes:** 2T, 4T, Cold Pulse (Cold Weld), and Tack (Spot).
+* **Precise Timing:** Configurable Pre-flow and Post-flow gas control.
+* **HF Ignition:** Integrated arc ignition delay logic.
+* **Custom UI:** Adjustable parameters via LED bar scale.
+* **Non-volatile Storage:** Saves settings to internal EEPROM.
 
-| LED | Параметр | Диапазон | Описание |
-|:---:|:---|:---:|:---|
-| **L1** | Pre-Gas | 0.1 – 0.5 сек | Продувка перед сваркой |
-| **L2** | Post-Gas | 0.5 – 1.0 сек | Защита электрода после сварки |
-| **L3** | HF Start | 0.1 – 3.0 сек | Время работы осциллятора |
-| **L4** | Cold Pause | 0.1 – 0.5 сек | Пауза между точками в режиме Cold |
+### Русский
+* **4 режима работы:** 2Т, 4Т, Cold Pulse (холодная сварка) и Tack (прихватки).
+* **Точные тайминги:** Настраиваемая длительность предпродувки и постпродувки.
+* **HF Поджиг:** Логика задержки для работы с осциллятором.
+* **Интерфейс:** Регулировка параметров через светодиодную шкалу.
+* **Память:** Автоматическое сохранение настроек в EEPROM.
 
-## 🔌 Схема подключения (Hardware)
+---
 
-Контроллер использует следующие выводы PIC16F886:
-* **PORT A:** Светодиодная шкала (8 LED, активный 0).
-* **RB1:** Реле газового клапана.
-* **RB2:** Управление током инвертора (Active Low).
-* **RC0:** Управление осциллятором (HF).
-* **RB3:** Кнопка горелки (START).
-* **RB4/RB5:** Кнопки навигации UP/DOWN.
+## 🔌 Hardware Mapping / Подключение периферии
 
-## 🚀 Сборка проекта
-1. Откройте проект в **MPLAB X IDE**.
-2. Используйте компилятор **XC8**.
-3. Прошейте контроллер через **PICkit 3/4**.
+
+
+| Component / Компонент | Pin / Вывод | Function / Назначение |
+| :--- | :--- | :--- |
+| **Gas Valve / Газ** | **RC0** | Gas solenoid relay |
+| **HF Arc / Поджиг** | **RB1** | Oscillator control |
+| **Weld Relay / Сварка**| **RB2** | Main contactor (Active Low) |
+| **LED Bar / Шкала** | **PORTA** | LED scale indicators |
+| **Torch Start / Пуск**| **RB3** | Torch button trigger |
+| **Button UP / Вверх** | **RB4** | Menu navigation |
+| **Button DOWN / Вниз**| **RB5** | Menu navigation / Gas purge |
+
+> **⚠️ NOTE:** Bits 6 and 7 of `PORTA` are swapped in software to match non-sequential physical PCB layout.
+
+---
+
+## 🚀 Programming & Setup Guide / Настройка и прошивка
+
+
+
+### English: Development Environment
+1. **Setup:** Install **MPLAB X IDE** and **XC8 Compiler**.
+2. **Project:** Create a new "Standalone Project" for **PIC16F886**.
+3. **Compile:** Add the `main.c` file to "Source Files". Click "Clean and Build".
+4. **Fuses:** Ensure `#pragma config LVP = OFF` is in your code.
+5. **Flash:** In `Project Properties -> PICkit 3 -> Power`, enable "Power target circuit" (5.0V). Click "Make and Program Device".
+
+### Русский: Среда разработки и прошивка
+1. **Установка:** Установите **MPLAB X IDE** и компилятор **XC8**.
+2. **Проект:** Создайте "Standalone Project" для **PIC16F886**.
+3. **Компиляция:** Добавьте `main.c` в "Source Files". Нажмите "Clean and Build".
+4. **Фьюзы:** Убедитесь, что в коде стоит `#pragma config LVP = OFF`.
+5. **Прошивка:** В `Project Properties -> PICkit 3 -> Power` включите "Power target circuit" (5.0V). Нажмите "Make and Program Device".
+
+---
+
+## 🕹 Control Logic / Управление
+
+
+
+* **Mode Select:** Short press **UP** in idle.
+* **Manual Gas Purge:** Hold **DOWN** in idle.
+* **Setup Menu:** Hold **UP + DOWN** for 1 sec.
+* **Navigation:** Use **UP/DOWN** to change value, **START** to save and move to the next parameter.
+
+---
+
+## 🛠 Troubleshooting / Решение проблем
+
+* **LED 7/8 issue:** Expected behavior; bits 6 and 7 of `PORTA` are swapped in software.
+* **Programming Error:** Check your cables (keep them <15cm) and verify the 10k pull-up resistor on **MCLR** (pin 1).
+* **HF Noise:** Add 100nF ceramic capacitor across VDD/VSS near the MCU.

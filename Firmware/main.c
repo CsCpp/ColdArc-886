@@ -1,63 +1,45 @@
+// =============================================================================
+// 1. CONFIGURATION BITS (FUSES) - РЈСЃС‚Р°РЅРѕРІР»РµРЅС‹ РґРѕ РёРЅРєР»СѓРґРѕРІ
+// =============================================================================
+#pragma config FOSC = INTRC_NOCLKOUT // Р’РЅСѓС‚СЂРµРЅРЅРёР№ РіРµРЅРµСЂР°С‚РѕСЂ, RA6/RA7 СЃРІРѕР±РѕРґРЅС‹
+#pragma config WDTE = ON             // Watchdog РІРєР»СЋС‡РµРЅ (Р·Р°С‰РёС‚Р° РѕС‚ Р·Р°РІРёСЃР°РЅРёР№)
+#pragma config PWRTE = OFF           // Power-up Timer РІС‹РєР» (РґР»СЏ РјРіРЅРѕРІРµРЅРЅРѕРіРѕ Р·Р°Р¶РёРјР° СЂРµР»Рµ)
+#pragma config MCLRE = ON            // РЎР±СЂРѕСЃ С‡РµСЂРµР· MCLR (СЂРµР·РёСЃС‚РѕСЂ 10Рє РЅР° +5Р’)
+#pragma config CP = OFF              // Р—Р°С‰РёС‚Р° РєРѕРґР° РІС‹РєР»СЋС‡РµРЅР°
+#pragma config CPD = OFF             // Р—Р°С‰РёС‚Р° EEPROM РІС‹РєР»СЋС‡РµРЅР°
+#pragma config BOREN = ON            // РЎР±СЂРѕСЃ РїСЂРё РїР°РґРµРЅРёРё РїРёС‚Р°РЅРёСЏ (Brown-out)
+#pragma config IESO = OFF            // Р’РЅСѓС‚СЂРµРЅРЅРµРµ/РІРЅРµС€РЅРµРµ РїРµСЂРµРєР»СЋС‡РµРЅРёРµ С‚Р°РєС‚РѕРІ РІС‹РєР»
+#pragma config FCMEN = OFF           // РњРѕРЅРёС‚РѕСЂ С‚Р°РєС‚РѕРІ РІС‹РєР»
+#pragma config LVP = OFF             // Low Voltage Programming РІС‹РєР» (РєСЂРёС‚РёС‡РЅРѕ РґР»СЏ СЃС‚Р°Р±РёР»СЊРЅРѕСЃС‚Рё)
+#pragma config BOR4V = BOR40V        // РџРѕСЂРѕРі СЃР±СЂРѕСЃР° РїРёС‚Р°РЅРёСЏ 4.0Р’
+#pragma config WRT = OFF             // Р—Р°С‰РёС‚Р° Р·Р°РїРёСЃРё РІС‹РєР»СЋС‡РµРЅР°
+
+// =============================================================================
+// 2. Р‘РР‘Р›РРћРўР•РљР Р РћРџР Р•Р”Р•Р›Р•РќРРЇ
+// =============================================================================
 #include <xc.h>
 #include <stdint.h>
 
-/**
- * =============================================================================
- * 1. CONFIGURATION BITS / БИТЫ КОНФИГУРАЦИИ
- * =============================================================================
- * Detailed settings for PICkit 3 stability.
- * Детальные настройки для стабильной работы с программатором.
- */
+#define _XTAL_FREQ 8000000      // Р§Р°СЃС‚РѕС‚Р° 8РњР“С† РґР»СЏ СЂР°СЃС‡РµС‚РѕРІ Р·Р°РґРµСЂР¶РµРє
 
-// Internal Oscillator, No Clock Out (RA6/RA7 as IO)
-// Внутренний генератор, ножки RA6/RA7 свободны для индикации
-#pragma config FOSC = INTRC_NOCLKOUT 
-#pragma config WDTE = OFF       // Watchdog Timer (OFF for development / ВЫКЛ при разработке)
-#pragma config PWRTE = ON       // Power-up Timer (Stabilizes voltage / Стабилизация питания)
-#pragma config MCLRE = ON       // MCLR pin as Reset (External 10k resistor / Внешний сброс)
-#pragma config CP = OFF         // Code Protection OFF / Защита кода ВЫКЛ
-#pragma config CPD = OFF        // EEPROM Protection OFF / Защита EEPROM ВЫКЛ
-#pragma config BOREN = ON       // Brown-out Reset (Reset on low voltage / Сброс при просадке)
-#pragma config IESO = OFF       // Internal/External Switchover OFF / Переключение тактов ВЫКЛ
-#pragma config FCMEN = OFF      // Fail-Safe Clock Monitor OFF / Монитор тактов ВЫКЛ
-#pragma config LVP = OFF        // Low Voltage Programming OFF (Critical for PK3 / ВАЖНО для PK3)
+// РќР°Р·РЅР°С‡РµРЅРёРµ РїРёРЅРѕРІ (Hardware Mapping)
+#define PIN_GAS      PORTCbits.RC0   // Р“Р°Р·РѕРІС‹Р№ РєР»Р°РїР°РЅ (1 - РѕС‚РєСЂС‹С‚Рѕ)
+#define PIN_WELD     PORTBbits.RB2   // РЎРІР°СЂРѕС‡РЅРѕРµ СЂРµР»Рµ (0 - Р’РљР› / Active Low)
+#define PIN_ARC      PORTBbits.RB1   // РџРѕРґР¶РёРі РґСѓРіРё (1 - Р’РљР›)
+#define PIN_LED_BAR  PORTA           // РЁРєР°Р»Р° СЃРІРµС‚РѕРґРёРѕРґРѕРІ (РћР±С‰РёР№ Р°РЅРѕРґ)
 
-#define _XTAL_FREQ 8000000      // 8MHz internal clock / Частота 8МГц
+// РљРЅРѕРїРєРё СѓРїСЂР°РІР»РµРЅРёСЏ
+#define BTN_START    PORTBbits.RB3   // РљРЅРѕРїРєР° РЅР° РіРѕСЂРµР»РєРµ (РЎС‚Р°СЂС‚/РЎС‚РѕРї)
+#define BTN_UP       PORTBbits.RB4   // РљРЅРѕРїРєР° Р’РІРµСЂС… (Р’С‹Р±РѕСЂ СЂРµР¶РёРјР°/РќР°СЃС‚СЂРѕР№РєР°)
+#define BTN_DOWN     PORTBbits.RB5   // РљРЅРѕРїРєР° Р’РЅРёР· (РџСЂРѕРґСѓРІРєР°/РќР°СЃС‚СЂРѕР№РєР°)
 
-/**
- * =============================================================================
- * 2. HARDWARE MAPPING / ПЕРИФЕРИЯ
- * =============================================================================
- */
-#define PIN_GAS      PORTCbits.RC0   // Gas Valve / Газовый клапан
-#define PIN_WELD     PORTBbits.RB2   // Main Weld Relay (Active Low / Активный 0)
-#define PIN_ARC      PORTBbits.RB1   // HF Ignition (Arc) / Осциллятор (Поджиг)
-#define PIN_LED_BAR  PORTA           // LED Scale (Common Anode / Общий анод)
-
-#define BTN_START    PORTBbits.RB3   // Torch Trigger / Кнопка горелки
-#define BTN_UP       PORTBbits.RB4   // Menu Up / Кнопка Вверх
-#define BTN_DOWN     PORTBbits.RB5   // Menu Down / Кнопка Вниз
-
-/**
- * =============================================================================
- * 3. LOGIC TYPES & VARIABLES / ТИПЫ И ПЕРЕМЕННЫЕ
- * =============================================================================
- */
-
-// Finite State Machine (FSM) States / Состояния автомата сварки
+// =============================================================================
+// 3. РўРРџР« Р”РђРќРќР«РҐ Р Р“Р›РћР‘РђР›Р¬РќР«Р• РџР•Р Р•РњР•РќРќР«Р•
+// =============================================================================
 typedef enum { 
-    S_IDLE,          // Waiting for trigger / Ожидание нажатия
-    S_PRE_GAS,       // Pre-flow gas / Предпродувка
-    S_ARC_INIT,      // Arc start delay / Задержка розжига
-    S_WELD_2T,       // Continuous weld (2T) / Сварка 2Т
-    S_WELD_4T_1,     // 4T: Trigger pressed 1 / 4Т: Первое нажатие
-    S_WELD_4T_2,     // 4T: Trigger released (welding) / 4Т: Сварка (кнопка отпущена)
-    S_WELD_4T_3,     // 4T: Trigger pressed (stop) / 4Т: Завершение (нажата повторно)
-    S_COLD_PULSE,    // Cold pulse active / Импульс холодной сварки
-    S_COLD_PAUSE,    // Cold pause active / Пауза холодной сварки
-    S_TACK,          // Single spot weld / Прихватка (точка)
-    S_POST_GAS,      // Post-flow gas / Постпродувка
-    S_WAIT_RELEASE   // Prevent auto-restart / Защита от автоповтора
+    S_IDLE, S_PRE_GAS, S_ARC_INIT, S_WELD_2T, 
+    S_WELD_4T_1, S_WELD_4T_2, S_WELD_4T_3, 
+    S_COLD_PULSE, S_COLD_PAUSE, S_TACK, S_POST_GAS, S_WAIT_RELEASE 
 } weld_state_t;
 
 typedef enum { EDIT_OFF = 0, EDIT_PRE, EDIT_POST, EDIT_ARC, EDIT_PULSE, EDIT_MAX } edit_t;
@@ -66,25 +48,19 @@ typedef struct {
     uint8_t mode; uint8_t pre; uint8_t post; uint8_t arc; uint8_t pulse; 
 } settings_t;
 
-volatile uint16_t state_timer = 0; // Countdown timer (ms) / Обратный отсчет (мс)
-volatile uint8_t flag_20ms = 0;    // UI refresh flag / Флаг обновления интерфейса
-settings_t cfg;                    // Current settings / Текущие настройки
-edit_t edit_state = EDIT_OFF;      // Menu state / Состояние меню
-weld_state_t state = S_IDLE;       // FSM state / Состояние автомата
+volatile uint16_t state_timer = 0; // РўР°Р№РјРµСЂ СЃРѕСЃС‚РѕСЏРЅРёР№ (РјСЃ)
+volatile uint8_t flag_20ms = 0;    // Р¤Р»Р°Рі РѕР±РЅРѕРІР»РµРЅРёСЏ РёРЅС‚РµСЂС„РµР№СЃР°
+settings_t cfg;                    // РЎС‚СЂСѓРєС‚СѓСЂР° РЅР°СЃС‚СЂРѕРµРє
+edit_t edit_state = EDIT_OFF;      // РЎРѕСЃС‚РѕСЏРЅРёРµ РјРµРЅСЋ
+weld_state_t state = S_IDLE;       // РўРµРєСѓС‰РµРµ СЃРѕСЃС‚РѕСЏРЅРёРµ Р°РІС‚РѕРјР°С‚Р°
 
-/**
- * =============================================================================
- * 4. DISPLAY & EEPROM / ИНДИКАЦИЯ И ПАМЯТЬ
- * =============================================================================
- */
+// =============================================================================
+// 4. РЎР•Р Р’РРЎРќР«Р• Р¤РЈРќРљР¦РР (EEPROM Р Р”РРЎРџР›Р•Р™)
+// =============================================================================
 
-// Load from non-volatile memory / Загрузка из энергонезависимой памяти
 void Settings_Load() {
     cfg.mode = eeprom_read(0); cfg.pre = eeprom_read(1); 
-    cfg.post = eeprom_read(2); cfg.arc = eeprom_read(3);
-    cfg.pulse = eeprom_read(4);
-    
-    // Bounds check / Проверка на корректность данных
+    cfg.post = eeprom_read(2); cfg.arc = eeprom_read(3); cfg.pulse = eeprom_read(4);
     if(cfg.mode > 3) cfg.mode = 0;
     if(cfg.pre < 1 || cfg.pre > 8) cfg.pre = 2;
     if(cfg.post < 1 || cfg.post > 8) cfg.post = 5;
@@ -92,54 +68,55 @@ void Settings_Load() {
     if(cfg.pulse < 1 || cfg.pulse > 8) cfg.pulse = 2;
 }
 
-// Save to EEPROM / Сохранение настроек
 void Settings_Save() {
     eeprom_write(0, cfg.mode); eeprom_write(1, cfg.pre); 
-    eeprom_write(2, cfg.post); eeprom_write(3, cfg.arc);
+    eeprom_write(2, cfg.post); eeprom_write(3, cfg.arc); 
     eeprom_write(4, cfg.pulse);
 }
 
-// LED Scale output with RA6/RA7 swap / Вывод на шкалу с перестановкой пинов
+void ShowMask(uint8_t mask) {
+    // РСЃРїСЂР°РІР»СЏРµРј РїРѕСЂСЏРґРѕРє Р±РёС‚ РґР»СЏ РїСЂР°РІРёР»СЊРЅРѕР№ СЂР°Р±РѕС‚С‹ RA6/RA7
+    uint8_t output = mask & 0x3F;           
+    if (mask & 0x40) output |= 0x80;        
+    if (mask & 0x80) output |= 0x40;        
+    PIN_LED_BAR = (uint8_t)~output; // РРЅРІРµСЂС‚РёСЂСѓРµРј, С‚Р°Рє РєР°Рє РѕР±С‰РёР№ Р°РЅРѕРґ
+}
+
 void ShowValue(uint8_t v) {
     uint8_t mask = 0;
     if (v > 8) v = 8;
-    for(uint8_t i = 0; i < v; i++) mask |= (1 << i); // Standard mask / Линейная маска
-    
-    // SWAP LOGIC: RA6 <-> RA7 / ЛОГИКА ПЕРЕСТАНОВКИ
-    uint8_t output = mask & 0x3F;      // RA0..RA5 remain the same / Оставляем 0-5 биты
-    if (mask & 0x40) output |= 0x80;   // Bit 6 goes to RA7 / 6-й бит (LED7) на RA7
-    if (mask & 0x80) output |= 0x40;   // Bit 7 goes to RA6 / 7-й бит (LED8) на RA6
-    
-    PIN_LED_BAR = ~output; // Common Anode: 0 turns LED ON / Общий анод: 0 зажигает
+    for(uint8_t i = 0; i < v; i++) mask |= (uint8_t)(1 << i);
+    ShowMask(mask);
 }
 
-/**
- * =============================================================================
- * 5. USER INTERFACE / ИНТЕРФЕЙС
- * =============================================================================
- */
+// =============================================================================
+// 5. РџРћР›Р¬Р—РћР’РђРўР•Р›Р¬РЎРљРР™ РРќРўР•Р Р¤Р•Р™РЎ (РљРќРћРџРљР Р РњР•РќР®)
+// =============================================================================
 void UI_Tick() {
-    static uint8_t u_l = 0, d_l = 0, s_l = 0, c_t = 0;
+    static uint8_t u_l = 0, d_l = 0, s_l = 0, c_t = 0; 
     static uint16_t blink_cnt = 0;
+    static uint8_t anim_step = 0, anim_tick = 0; 
 
-    // Enter/Exit Menu: UP+DOWN hold / Вход в меню: удержание Вверх+Вниз
+    // Р’С…РѕРґ/РІС‹С…РѕРґ РёР· РЅР°СЃС‚СЂРѕРµРє: Р·Р°Р¶Р°С‚СЊ Р’РІРµСЂС… + Р’РЅРёР·
     if (!BTN_UP && !BTN_DOWN) {
-        if (++c_t > 50) { // 1 sec delay / Задержка 1 сек
+        if (++c_t > 50) {  
             c_t = 0;
-            if (edit_state == EDIT_OFF) edit_state = EDIT_PRE;
+            if (edit_state == EDIT_OFF) edit_state = EDIT_PRE; 
             else { edit_state = EDIT_OFF; Settings_Save(); }
             PIN_LED_BAR = 0xFF; 
         }
     } else c_t = 0;
 
     if (edit_state != EDIT_OFF) {
+        // Р РµР¶РёРј Р Р•Р”РђРљРўРР РћР’РђРќРРЇ
         blink_cnt++;
-        if ((blink_cnt / 10) % 2) { // Blink value / Мигание значения
-            uint8_t val = (edit_state == EDIT_PRE) ? cfg.pre : (edit_state == EDIT_POST) ? cfg.post : (edit_state == EDIT_ARC) ? cfg.arc : cfg.pulse;
+        if ((blink_cnt / 10) % 2) { 
+            uint8_t val = (edit_state == EDIT_PRE) ? cfg.pre : 
+                          (edit_state == EDIT_POST) ? cfg.post : 
+                          (edit_state == EDIT_ARC) ? cfg.arc : cfg.pulse;
             ShowValue(val);
         } else PIN_LED_BAR = 0xFF;
 
-        // Settings adjustments / Регулировка параметров
         if (!BTN_UP && !u_l) {
             if (edit_state == EDIT_PRE && cfg.pre < 8) cfg.pre++;
             if (edit_state == EDIT_POST && cfg.post < 8) cfg.post++;
@@ -156,146 +133,158 @@ void UI_Tick() {
             d_l = 1;
         } else if (BTN_DOWN) d_l = 0;
 
-        // Switch setting via torch button / Смена параметра кнопкой горелки
         if (!BTN_START && !s_l) {
             if (++edit_state >= EDIT_MAX) edit_state = EDIT_PRE;
             s_l = 1;
         } else if (BTN_START) s_l = 0;
-    } else {
-        // Mode select / Выбор режима
-        if (!BTN_UP && !u_l) { cfg.mode = (cfg.mode + 1) % 4; u_l = 1; }
-        else if (BTN_UP) u_l = 0;
-        
-        // Manual Gas purge (Down) / Ручная продувка газа (Вниз)
-        if (state == S_IDLE) PIN_GAS = !BTN_DOWN;
-        
-        // Show current mode (LED1-4) / Отображение режима (светодиоды 1-4)
-        PIN_LED_BAR = ~(1 << (cfg.mode & 0x07));
+    } 
+    else {
+        // Р РђР‘РћР§РР™ Р Р•Р–РРњ
+        if (state == S_IDLE || state == S_WAIT_RELEASE) {
+            anim_step = 0; anim_tick = 0;
+            if (state == S_IDLE) {
+                if (!BTN_UP && !u_l) { cfg.mode = (cfg.mode + 1) % 4; u_l = 1; }
+                else if (BTN_UP) u_l = 0;
+            }
+            ShowMask((uint8_t)(1 << (cfg.mode & 0x07)));
+        } else {
+            // РђРЅРёРјР°С†РёСЏ РїСЂРё Р°РєС‚РёРІРЅРѕР№ СЃРІР°СЂРєРµ
+            if (++anim_tick >= 4) { anim_tick = 0; anim_step = (anim_step + 1) % 4; }
+            uint8_t anim_mask = 0;
+            switch(anim_step) {
+                case 0: anim_mask = 0x81; break; 
+                case 1: anim_mask = 0x42; break; 
+                case 2: anim_mask = 0x24; break; 
+                case 3: anim_mask = 0x18; break; 
+            }
+            ShowMask(anim_mask);
+        }
     }
 }
 
-/**
- * =============================================================================
- * 6. WELDING LOGIC (FSM) / ЛОГИКА СВАРКИ
- * =============================================================================
- */
-
-
+// =============================================================================
+// 6. РђР’РўРћРњРђРў РЈРџР РђР’Р›Р•РќРРЇ РЎР’РђР РљРћР™ (FSM)
+// =============================================================================
 void FSM_Process() {
     switch(state) {
         case S_IDLE:
-            PIN_WELD = 1; PIN_ARC = 0; PIN_GAS = 0;
+            PIN_WELD = 1; PIN_ARC = 0; 
+            
+            // РџР РРћР РРўР•Рў 1: РЎС‚Р°СЂС‚ СЃРІР°СЂРєРё
             if (!BTN_START && edit_state == EDIT_OFF) {
-                state_timer = (uint16_t)cfg.pre * 100;
+                PIN_GAS = 1; 
+                state_timer = (uint16_t)cfg.pre * 100; 
                 state = S_PRE_GAS;
+            } 
+            // РџР РРћР РРўР•Рў 2: Р СѓС‡РЅР°СЏ РїСЂРѕРґСѓРІРєР° РіР°Р·Р° (РєРЅРѕРїРєР° РІРЅРёР·)
+            else if (!BTN_DOWN && edit_state == EDIT_OFF) {
+                PIN_GAS = 1;
+            }
+            // РџР РРћР РРўР•Рў 3: Р’СЃС‘ РІС‹РєР»СЋС‡РµРЅРѕ
+            else {
+                PIN_GAS = 0;
             }
             break;
 
-        case S_PRE_GAS: // PRE-GAS flow / Предпродувка
+        case S_PRE_GAS: 
             PIN_GAS = 1;
             if (state_timer == 0) {
-                PIN_WELD = 0; PIN_ARC = 1; // Relays ON / Реле ВКЛ
-                if (cfg.mode == 2) { state_timer = 50; state = S_COLD_PULSE; } // Cold Weld
-                else if (cfg.mode == 3) { state_timer = (uint16_t)cfg.pulse * 100; state = S_TACK; } // Tack
-                else { state_timer = (uint16_t)cfg.arc * 100; state = S_ARC_INIT; } // TIG
+                PIN_WELD = 0; PIN_ARC = 1;  
+                if (cfg.mode == 2) { state_timer = 50; state = S_COLD_PULSE; }
+                else if (cfg.mode == 3) { state_timer = (uint16_t)cfg.pulse * 100; state = S_TACK; }
+                else { state_timer = (uint16_t)cfg.arc * 100; state = S_ARC_INIT; }
             }
             break;
 
-        case S_ARC_INIT: // Wait for stable arc / Ожидание стабильной дуги
-            if (state_timer == 0) {
-                PIN_ARC = 0; // HF Ignition OFF / Поджиг ВЫКЛ
-                state = (cfg.mode == 0) ? S_WELD_2T : S_WELD_4T_1;
-            }
+        case S_ARC_INIT: 
+            if (state_timer == 0) { PIN_ARC = 0; state = (cfg.mode == 0) ? S_WELD_2T : S_WELD_4T_1; }
             break;
 
-        case S_WELD_2T: // Standard 2-Stroke / Режим 2Т
+        case S_WELD_2T: 
             if (BTN_START) { state_timer = (uint16_t)cfg.post * 100; state = S_POST_GAS; }
             break;
 
-        case S_WELD_4T_1: if (BTN_START) state = S_WELD_4T_2; break; // Release to start / Отпусти для сварки
-        case S_WELD_4T_2: if (!BTN_START) state = S_WELD_4T_3; break; // Press to stop / Нажми для стопа
-        case S_WELD_4T_3: if (!BTN_START) { state_timer = (uint16_t)cfg.post * 100; state = S_POST_GAS; } break;
+        case S_WELD_4T_1: if (BTN_START) state = S_WELD_4T_2; break;
+        case S_WELD_4T_2: if (!BTN_START) state = S_WELD_4T_3; break;
+        case S_WELD_4T_3: if (BTN_START) { state_timer = (uint16_t)cfg.post * 100; state = S_POST_GAS; } break;
 
-        case S_COLD_PULSE: // COLD WELD: Impulse / Холодная сварка: Импульс
-            PIN_WELD = 0; PIN_ARC = 1;
+        case S_COLD_PULSE: 
+            PIN_WELD = 0; PIN_ARC = 1; 
             if (BTN_START) { state_timer = (uint16_t)cfg.post * 100; state = S_POST_GAS; }
-            else if (state_timer == 0) {
-                PIN_WELD = 1; PIN_ARC = 0;
-                state_timer = (uint16_t)cfg.pulse * 100;
-                state = S_COLD_PAUSE;
+            else if (state_timer == 0) { 
+                PIN_WELD = 1; PIN_ARC = 0; 
+                state_timer = (uint16_t)cfg.pulse * 100; state = S_COLD_PAUSE; 
             }
             break;
 
-        case S_COLD_PAUSE: // COLD WELD: Pause / Холодная сварка: Пауза
+        case S_COLD_PAUSE: 
             if (BTN_START) { state_timer = (uint16_t)cfg.post * 100; state = S_POST_GAS; }
-            else if (state_timer == 0) {
-                PIN_WELD = 0; PIN_ARC = 1; state_timer = 50; state = S_COLD_PULSE;
+            else if (state_timer == 0) { 
+                PIN_WELD = 0; PIN_ARC = 1; state_timer = 50; state = S_COLD_PULSE; 
             }
             break;
 
-        case S_TACK: // Single spot weld / Сварка прихватками (точкой)
-            if (state_timer == 0) {
-                PIN_WELD = 1; PIN_ARC = 0;
-                state_timer = (uint16_t)cfg.post * 100;
-                state = S_POST_GAS;
+        case S_TACK: 
+            if (state_timer == 0) { 
+                PIN_WELD = 1; PIN_ARC = 0; 
+                state_timer = (uint16_t)cfg.post * 100; state = S_POST_GAS; 
             }
             break;
 
-        case S_POST_GAS: // Post-gas flow / Постпродувка
+        case S_POST_GAS: 
             PIN_GAS = 1; PIN_WELD = 1; PIN_ARC = 0;
             if (state_timer == 0) { PIN_GAS = 0; state = S_WAIT_RELEASE; }
             break;
 
-        case S_WAIT_RELEASE: // Wait for button release / Ожидание отпускания кнопки
-            if (BTN_START) state = S_IDLE;
+        case S_WAIT_RELEASE: 
+            if (BTN_START) state = S_IDLE; 
             break;
     }
 }
 
-/**
- * =============================================================================
- * 7. SYSTEM: ISR & MAIN / СИСТЕМНЫЕ ФУНКЦИИ
- * =============================================================================
- */
-
-// Interrupt Service Routine / Обработка прерываний
+// =============================================================================
+// 7. РЎРРЎРўР•РњРќР«Р• Р¤РЈРќРљР¦РР (РџР Р•Р Р«Р’РђРќРРЇ Р MAIN)
+// =============================================================================
 void __interrupt() isr() {
-    if (T0IF) { // Timer0 Interrupt (1ms)
-        static uint8_t div_20 = 0;
-        TMR0 = 6; // Reload timer / Перезагрузка таймера
+    if (T0IF) { 
+        static uint8_t div_20 = 0; TMR0 = 6; 
         if (state_timer > 0) state_timer--;
-        if (++div_20 >= 20) { flag_20ms = 1; div_20 = 0; } // UI divider / Делитель для интерфейса
-        T0IF = 0; // Clear flag / Сброс флага
+        if (++div_20 >= 20) { flag_20ms = 1; div_20 = 0; } 
+        T0IF = 0; 
     }
 }
 
 void main() {
-    // OSCCON Register for 8MHz internal oscillator
-    OSCCON = 0x71; 
+    // 1. РђРїРїР°СЂР°С‚РЅР°СЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ (Р±РµР·РѕРїР°СЃРЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ)
+    PORTC = 0x00; 
+    PORTB = 0x04; // RB2=1 (РІС‹РєР» СЂРµР»Рµ)
+    PORTA = 0xFF; // РРЅРґРёРєР°С†РёСЏ РІС‹РєР»
     
-    // Digital Mode for all pins / Все ножки в цифровой режим
-    ANSEL = 0; ANSELH = 0; 
+    TRISC = 0xFE; // RC0 РІС‹С…РѕРґ
+    TRISB = 0x38; // RB0-2 РІС‹С…РѕРґС‹, RB3-5 РІС…РѕРґС‹
+    TRISA = 0x00; // Р’СЃРµ РЅР° РІС‹С…РѕРґ
     
-    // TRIS: I/O Direction / Направление портов
-    TRISA = 0x00;        // PORTA - Outputs (LEDs) / Выходы (светодиоды)
-    TRISB = 0x38;        // RB1, RB2 - Outputs; RB3,4,5 - Inputs / Входы для кнопок
-    TRISCbits.TRISC0 = 0;// RC0 - Output (Gas) / Выход (Газ)
+    ANSEL = 0; ANSELH = 0;
+    OSCCON = 0x71; // 8MHz
     
-    // Internal Pull-ups for buttons / Внутренняя подтяжка для кнопок
+    // 2. РџРѕРґС‚СЏР¶РєР° РєРЅРѕРїРѕРє
     OPTION_REGbits.nRBPU = 0; 
-    WPUB = 0x38; 
+    WPUB = 0x38;
 
-    // Timer0 setup for 1ms / Настройка Timer0 на 1мс
+    // 3. Р—Р°РґРµСЂР¶РєР° СЃС‚Р°Р±РёР»РёР·Р°С†РёРё (РїСЂРѕС‚РёРІ Р»РѕР¶РЅС‹С… РЅР°Р¶Р°С‚РёР№ РїСЂРё СЃС‚Р°СЂС‚Рµ)
+    __delay_ms(50); 
+
+    // 4. РўР°Р№РјРµСЂ
     OPTION_REGbits.T0CS = 0; 
     OPTION_REGbits.PSA = 0; 
-    OPTION_REGbits.PS = 0x02; // Prescaler 1:8
+    OPTION_REGbits.PS = 0x02; 
     TMR0 = 6; T0IE = 1; GIE = 1;
 
-    Settings_Load(); // Load settings on startup / Загрузка при старте
+    Settings_Load();
 
     while(1) {
-        CLRWDT(); // Reset Watchdog (Safety) / Сброс собаки (Безопасность)
-        FSM_Process(); // Welding logic / Сварочный автомат
-        if (flag_20ms) { UI_Tick(); flag_20ms = 0; } // Interface / Интерфейс
+        CLRWDT();              
+        FSM_Process();         
+        if (flag_20ms) { UI_Tick(); flag_20ms = 0; }
     }
 }
